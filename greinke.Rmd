@@ -16,6 +16,8 @@ We would be using pitchFX dataset captured for the pitcher named Zack Greinke. Z
 ```{r echo = FALSE , message=FALSE}
 library("tidyverse")
 library(tidyr)
+#install.packages("gridExtra")
+library(gridExtra)
 ```
 
 ## Dataset 
@@ -68,7 +70,17 @@ We use tidyr a simple yet sophisticated library which would help us in our  furt
 
 ```{r echo = FALSE}
 data$game_date = as.Date(data$game_date , format = "%m/%d/%Y")
+```
+
+We create three new columns named "year","month","day" for further clarity and processing. 
+
+```{r echo =FALSE}
 data = separate(data, col = game_date,into = c("year", "month", "day"),sep = "-", remove = FALSE )
+``` 
+
+Since , Our main aim is to compare Zack's performance in July as compared to other months we slice our data so that it would be  easy to analyse. Here are the statistics for the month data present in the dataset. 
+
+```{r echo =FALSE}
 data$month = as.numeric(data$month)
 data$july <- ifelse(data$month == 7, "july", "other")
 summary(data$month)
@@ -89,7 +101,7 @@ The analysis would help us come to a conclusion so as to how consistent the data
 We start by checking the overall speed ranges at which Zack has bowled throught the season. 
 
 ```{r echo = FALSE}
-ggplot(data , aes(start_speed))+geom_histogram(bins = 8)+ggtitle("Speed ranges and the amount of pitch")
+ggplot(data , aes(start_speed))+geom_histogram(bins = 8)+ggtitle("Speed ranges and the amount of pitch")+xlab("Start Speed (mph")
                                                                  
 ```
                                               
@@ -98,11 +110,8 @@ We must also compare so as to was he successful in July ? Was there something di
 The plot below shows how Zack did in july as compared to other months in terms of Speed of pitch.
 
 ```{r echo = FALSE}
-#install.packages("gridExtra")
-library(gridExtra)
-par(mfrow = c(2,2))
-p1 = ggplot(data = (subset(data , july == "july")) , aes(start_speed))+geom_histogram(bins = 8) + ggtitle("Distribution of Delivery in July in terms of Start Speed")
-p2 = ggplot(data = (subset(data , july == "other")) , aes(start_speed))+geom_histogram(bins = 8) + ggtitle("Distribution of Delivery in other months in terms of Start Speed")
+p1 = ggplot(data = (subset(data , july == "july")) , aes(start_speed))+geom_histogram(bins = 8)+xlab("Start Speed (MPH)")+ ggtitle("Distribution of Delivery in July in terms of Start Speed")
+p2 = ggplot(data = (subset(data , july == "other")) , aes(start_speed))+geom_histogram(bins = 8)+ggtitle("Distribution of Delivery in other months in terms of Start Speed")+xlab("Start Speed (MPH)")
 grid.arrange(p1, p2, ncol=2)
 ```
 
@@ -111,20 +120,30 @@ As we can see from the graph above there isn't too much variation in terms of th
 We may want to see how it goes when Zack pitches the four-seam fastballs (denoted as "FF" under the pitch_type variable). We shall see a comparision between his july pitching and other months pitches in order to evaluate if there are any changes in that. 
 
 ```{r echo = FALSE}
-ggplot(data = subset(data ,pitch_type == "FF"),aes(start_speed))+geom_histogram(bins = 45)+ggtitle("Fast seam delivery speed")
+ggplot(data = subset(data ,pitch_type == "FF"),aes(start_speed))+geom_histogram(bins = 45)+ggtitle("Fast seam delivery speed")+xlab("Start Speed (MPH)")
 ```
 
  
-We would also compare the Fast seam distribution and check whether we can infer something from it. 
+We would also compare the Fast seam distribution and check whether we can infer something from it. To do that , We create new dataframes for july and other months so that we can compare. 
 
 ```{r echo = FALSE}
 # Create greinke_july
 greinke_july <- subset(data, july =="july")
 # Create greinke_other
 greinke_other <- subset(data, july == "other")
+``` 
+
+Now , Our aim is to check for difference in FF balls which were appreciated very well , So we again subset our data seperately, 
+
+```{r echo = FALSE}
 july_ff <- subset(greinke_july, pitch_type == "FF")
 # Create other_ff
 other_ff <- subset(greinke_other, pitch_type == "FF")
+``` 
+
+Let's check the histogram and compare whether there has been anything different with the speed at which Greinke has bowled. 
+
+```{r echo =FALSE}
 # Make a fastball speed histogram for other months
 hist(other_ff$start_speed,
      col = "#00009950", freq = FALSE,
@@ -163,7 +182,7 @@ ggplot(data,aes(outs))+geom_histogram(bins = 3)
 Zack is a very dangerous pitcher as seen from the above graph , Picking out batters in several occassion. 
 
 ```{r echo = FALSE}
-ggplot(data,aes(inning)) + geom_histogram()+ggtitle("Innings count")
+ggplot(data,aes(factor(inning))) + geom_bar()+ggtitle("Innings count")
 ```
 
 Zack has bowled mostly during the mid and opening innings of the game.
@@ -178,9 +197,9 @@ tapply(data$start_speed, data$july, mean)
 
 As seen above , Zack has had a marginally higher start speed in the month of July. How about the fast seams ? 
 ```{r echo = FALSE}
-greinke_ff <- subset(data, pitch_type == "FF")
+greinke_ff = subset(data, pitch_type == "FF")
 # Calculate mean fastball velocities: ff_velo_month
-ff_velo_month <- tapply(greinke_ff$start_speed, greinke_ff$july, mean)
+ff_velo_month = tapply(greinke_ff$start_speed, greinke_ff$july, mean)
 
 # Print ff_velo_month
 ff_velo_month
@@ -196,33 +215,38 @@ We shall start by assessing game by game average speed changes and try to analys
 To start off , We would be using the tapply function of R again. We would use it create another dataframe which would strictly be used for our Bivariate analysis. 
 
 ```{r echo = FALSE}
-ff_dt <- data.frame(tapply(greinke_ff$start_speed, greinke_ff$game_date, mean))
-ff_dt$game_date <- as.Date(row.names(ff_dt), "%Y-%m-%d")
+# Creating a new dataframe 
+ff_dt = data.frame(tapply(greinke_ff$start_speed, greinke_ff$game_date, mean))
+#fixing the new dataframe's game date columns
+ff_dt$game_date = as.Date(row.names(ff_dt), "%Y-%m-%d")
 # Rename the first column
-colnames(ff_dt)[1] <- "start_speed"
+colnames(ff_dt)[1] = "start_speed"
 # Remove row names
-row.names(ff_dt) <- NULL
+row.names(ff_dt) = NULL
 ``` 
 
 The step graph below , Shows the change of Start Speed by Zack , It is interesting to see how different has he pitched on the particular month. I have also included the line chart for further clarity. 
 
 ```{r echo =FALSE}
-p1 = ggplot(ff_dt,aes(game_date,start_speed))+geom_step()+ggtitle("Month wise average start speed comparision (step)")
-p2 = ggplot(ff_dt,aes(game_date,start_speed))+geom_line()+ggtitle("Month wise average start speed comparision")+geom_point()
+p1 = ggplot(ff_dt,aes(game_date,start_speed))+geom_step()+ggtitle("Month wise average start speed comparision (step)")+ylab('Start Speed (MPH)')
+p2 = ggplot(ff_dt,aes(game_date,start_speed))+geom_line()+ggtitle("Month wise average start speed comparision")+geom_point()+ylab('Start Speed (MPH)')
 grid.arrange(p1,p2,ncol = 2)
 
 ```
 
 The step graph here indicates the change and plots it over the graph. As we can see that in the month of July , Zack has tried to bring a much slower and limited speed as compared to previous month where he has pitched slowly and as opposed to the latter part of the season where Zack has pitched at a considerable higher speed. We also note that his pitching speed increased in July. 
 
-It also would be worth investigating specific performance for the month of July. 
+It also would be worth investigating specific performance for the month of July. Again we create more columns for our further processing in the prop table that we generated above for investigation. 
 
 ```{r echo = FALSE}
 ff_dt = separate(ff_dt, col = game_date,into = c("year", "month", "day"),sep = "-", remove = FALSE )
 ff_dt$month = as.numeric(ff_dt$month)
 ```
+
+We now compare the average speed in July for every game , 
+
 ```{r echo = FALSE}
-ggplot(subset(ff_dt,month == 7),aes(game_date,start_speed))+geom_line()+ggtitle("July average start speed comparision")+geom_point()
+ggplot(subset(ff_dt,month == 7),aes(game_date,start_speed))+geom_line()+ggtitle("July average start speed comparision")+geom_point()+ylab("Start Speed (MPH)")
 ```
 
 As we could see his Speed variation has been excellent. Starting off at a speed of around 92.4 and going well upto 93.3 and finishing the month with the speed at which he started. 
@@ -230,7 +254,7 @@ As we could see his Speed variation has been excellent. Starting off at a speed 
 Another thing to assess would be the delivery counts with respect to the innings , Is he fast during the opening innings or during the end. 
 
 ```{r echo = FALSE}
-ggplot(data , aes(start_speed,inning))+geom_point(alpha = 0.2)+ggtitle("Innings wise Speed")
+ggplot(data , aes(start_speed,inning))+geom_jitter(alpha = 0.2)+ggtitle("Innings wise Speed")+xlab("Start Speed (MPH)")
 ``` 
 
 So there isn't much to infer but we can confirm that Zack has been bowling at a similar rate , Which means there isn't much variation of speed as far as innings of play is concerned. 
@@ -238,13 +262,20 @@ So there isn't much to infer but we can confirm that Zack has been bowling at a 
 We may find the same for July below. 
 
 ```{r echo = FALSE}
-ggplot(greinke_july, aes(start_speed,inning))+geom_point(alpha = 0.2)+ggtitle("Innings wise Speed for the month of July")
+ggplot(greinke_july, aes(start_speed,inning))+geom_jitter(alpha = 0.2)+ggtitle("Innings wise Speed for the month of July")+xlab("Start Speed (MPH)")
 ``` 
 
 Yet again , Nothing different as far as the Speed of which the balls has been pitched is concerned. 
 
+Now we try to compare the changes in delivery rate and see if that has been different in July. We first prepare our data to tell us about the change in delivery rate. 
+
 ```{r echo =FALSE}
 greinke <- subset(data, pitch_type != "IN" & pitch_type != "EP")
+``` 
+
+We also use droplevels function for further clarity, 
+
+```{r echo =FALSE}
 # Drop the levels from pitch_type
 greinke$pitch_type <- droplevels(greinke$pitch_type)
 # Create type_tab
@@ -252,6 +283,12 @@ type_tab <- table(greinke$pitch_type, greinke$july)
 # Print type_tab
 type_prop <- round(prop.table(type_tab, margin = 2), 3)
 type_prop <- as.data.frame.matrix(type_prop)
+``` 
+
+Assigning rownames and creating the table. 
+With difference in the rate is given using the formula july - other / other which would give us the ratio of changes. 
+
+```{r echo = FALSE}
 Pitch <- rownames(type_prop)
 type_prop <- cbind(Pitch, type_prop)
 colnames(type_prop) <- paste(c("Pitch", "July", "Other"))
@@ -296,7 +333,7 @@ Let's do further analysis so as to Spin can be a criteria for Zack's success. We
 We find that by plotting a graph to see affect of speed and spin . 
 
 ```{r echo =FALSE}
-ggplot(data , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("Spin vs Speed comparsion")
+ggplot(data , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("Spin vs Speed comparsion")+xlab("Start Speed (MPH)")+ylab("Spin rate (RPM)")
 ```
 
 We can establish that the spin rate by Zack is not upto the mark. He has been struggling to get hold of the spin well that is natural as the ball travels at a faster speed. 
@@ -304,8 +341,8 @@ We can establish that the spin rate by Zack is not upto the mark. He has been st
 So , We did establish the fact that Zack has been a very good pitcher. Let's look at his performance in July as compared to other months for the very same.
 
 ```{r echo =FALSE}
-p1 = ggplot(greinke_july , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("July Spin vs Speed comparsion")
-p2 = ggplot(greinke_other , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("Other months Spin vs Speed comparsion")
+p1 = ggplot(greinke_july , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("July Spin vs Speed comparsion")+xlab("Start Speed (MPH)")+ylab("Spin rate (RPM)")
+p2 = ggplot(greinke_other , aes(start_speed,spin_rate))+geom_point(alpha = 0.2)+ggtitle("Other months Spin vs Speed comparsion")+xlab("Start Speed (MPH)")+ylab("Spin rate (RPM)")
 grid.arrange(p1,p2,ncol=2)
 ```
 
@@ -351,7 +388,7 @@ As seen above we can infer that Zack has pitched the ball a bit lower , Especial
 ```{r echo = FALSE}
 ggplot(data , aes(outs,start_speed,col=factor(month)))+
   geom_point(alpha=0.4)+
-  facet_grid(.~month)
+  facet_grid(.~month)+ylab("Start Speed in MPH")
 ```
 
 We can see that there is nothing which can conclusively say that Zack has had a different speed or performance , His performance has been very consistent and has got a good average to show for. 
@@ -360,10 +397,19 @@ Let's take a look at the statistics on how Zack has had his out rates as well as
 ```{r echo =FALSE}
 print("July out value counts")
 summary(factor(greinke_july$outs))
+```
+
+```{r echo =FALSE}
 print("Other out value counts")
 summary(factor(greinke_other$outs))
+```
+
+```{r echo = FALSE}
 print("Mean of outs in July")
 mean(greinke_july$outs)
+```
+
+```{r echo =FALSE}
 print("Mean of outs in others")
 mean(greinke_other$outs)
 ```
@@ -393,7 +439,7 @@ Let's evaluate for the Speed , Spin rate and the outs then we can further see if
 ```{r echo = FALSE}
 ggplot(data , aes(spin_rate,start_speed,col=factor(outs)))+
   geom_point(alpha=0.4)+
-  facet_grid(.~outs)+ggtitle("Speed , Spin is he out ? ")
+  facet_grid(.~outs)+ggtitle("Speed , Spin is he out ? ")+ylab("Start Speed (MPH)")+xlab("Spin rate (RPM)")
 ```
 
 Yet again , Similar pitches , Similar Spin rate , Similar Speed and different results , Maybe he had a great luck. 
@@ -403,7 +449,7 @@ Let's further see for July to figure out if the dismissal was different.
 ```{r echo = FALSE}
 ggplot(greinke_july , aes(spin_rate,start_speed,col=factor(outs)))+
   geom_point(alpha=0.4)+
-  facet_grid(.~outs)+ggtitle("Speed , Spin is he out (July) ? ")
+  facet_grid(.~outs)+ggtitle("Speed , Spin is he out (July) ? ")+ylab("Start Speed (MPH)")+xlab("Spin rate (RPM)")
 ```
 
 Yet again nothing can be established since the delivery seems to be the same. Just that slower delivery seem to have got batters out. 
@@ -426,9 +472,6 @@ grid.arrange(p1,p2,ncol = 2)
 
 We did arrive to a conclusion that , He did up his speed in June and dropped in July and further increased in August. We can also see the increase in speed for the month of July. Where he did drop his speed and then later on bowled ultra fast! 
 
-```{r echo = FALSE}
-ggplot(subset(ff_dt,month == 7),aes(game_date,start_speed))+geom_line()+ggtitle("July average start speed comparision")+geom_point()
-```
 
 Hence we did try to check how has the speed been different/fast ? 
 ```{r echo = FALSE}
@@ -460,39 +503,7 @@ barplot(type_prop$Difference, names.arg = type_prop$Pitch,
         ylim = c(-0.4, 0.4))
 ``` 
 
-We then saw if there has been different pitch position for these pitch types , We did get some feedback and can be seen below  
-
-```{r echo = FALSE}
-ggplot(data , aes(px,pz,col=factor(pitch_type)))+
-  geom_point(alpha=0.1)+
-  facet_grid(.~pitch_type)+ggtitle("Where did Zack pitch for individual type of pitch")
-```
-
-Is it different then July ? 
-
-```{r echo = FALSE}
-ggplot(greinke_july , aes(px,pz,col=factor(pitch_type)))+
-  geom_point(alpha=0.1)+
-  facet_grid(.~pitch_type)+ggtitle("Where did Zack pitch for individual type of pitch")
-```
-
-Sadly no! His types of pitching for the delivery is same. 
-
-We also checked the positions at which balls was pitched and batter was out , It was again the same towards the left side of the right handed batter. Which can be seen below , 
-
-```{r echo = FALSE}
-ggplot(data , aes(px,pz,col=factor(outs)))+
-  geom_point(alpha=0.4)+
-  facet_grid(.~outs)+ggtitle("Outs position entire season")
-```
-
-been different in July ? No. Similar type of deliveries were bowled. 
-
-```{r echo = FALSE}
-ggplot(greinke_july , aes(px,pz,col=factor(outs)))+
-  geom_point(alpha=0.4)+
-  facet_grid(.~outs)+ggtitle("Outs for July , Pitch Position")
-```
+The changes in pitch type was the only successful thing Zack Greinke did in July. The changes of the pitching meant that he was doing something different but the performance doesn't show it was extraordinary. 
 
 
 ## CONCLUSION 
