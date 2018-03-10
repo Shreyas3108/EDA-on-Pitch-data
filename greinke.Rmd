@@ -541,13 +541,13 @@ In a game which involves pitchers whether it's Cricket or Baseball , Speed has a
 p1 = ggplot(ff_dt,aes(game_date,start_speed))+
      geom_step()+
      ggtitle("Month wise average start speed comparision (step)")+
-     xlab("Spin rate(RPM)")+
+     xlab("2015 Season month")+
      ylab("Start Speed(MPH)")
 
 p2 = ggplot(ff_dt,aes(game_date,start_speed))+
      geom_line()+
      ggtitle("Month wise average start speed comparision")+
-     geom_point()+xlab("Spin rate(RPM)")+
+     geom_point()+xlab("2015 Season month")+
      ylab("Start Speed(MPH)")
 
 grid.arrange(p1,p2,ncol = 2)
